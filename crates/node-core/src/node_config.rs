@@ -39,7 +39,7 @@ use reth_network::{
     transactions::{TransactionFetcherConfig, TransactionsManagerConfig},
     NetworkBuilder, NetworkConfig, NetworkHandle, NetworkManager,
 };
-use reth_node_api::ConfigureEvm;
+pub use reth_node_api::{ConfigureEvm, ConfigureEvmEnv};
 use reth_primitives::{
     constants::eip4844::{LoadKzgSettingsError, MAINNET_KZG_TRUSTED_SETUP},
     kzg::KzgSettings,
@@ -713,7 +713,7 @@ impl NodeConfig {
         // try to look up the header in the database
         if let Some(header) = header {
             info!(target: "reth::cli", ?tip, "Successfully looked up tip block in the database");
-            return Ok(header.number)
+            return Ok(header.number);
         }
 
         Ok(self.fetch_tip_from_network(client, tip.into()).await?.number)
@@ -735,7 +735,7 @@ impl NodeConfig {
             match get_single_header(&client, tip).await {
                 Ok(tip_header) => {
                     info!(target: "reth::cli", ?tip, "Successfully fetched tip");
-                    return Ok(tip_header)
+                    return Ok(tip_header);
                 }
                 Err(error) => {
                     error!(target: "reth::cli", %error, "Failed to fetch the tip. Retrying...");
