@@ -170,7 +170,7 @@ reth-transaction-pool = { path = "crates/transaction-pool" }
 reth-trie = { path = "crates/trie" }
 
 # revm
-revm = { git = "https://github.com/bluealloy/revm", rev = "34e636b", features = [
+revm = { git = "https://github.com/Dong-Hyeon-Yu/revm.git", branch = "master", features = [
     "std",
     "secp256k1",
 ], default-features = false }
@@ -224,7 +224,7 @@ strum = "0.26"
 rayon = "1.7"
 itertools = "0.12"
 parking_lot = "0.12"
-metrics = "0.21.1" # Needed for `metrics-macro` to resolve the crate using `::metrics` notation
+metrics = "0.21.1"                                    # Needed for `metrics-macro` to resolve the crate using `::metrics` notation
 hex-literal = "0.4"
 once_cell = "1.17"
 syn = "2.0"
