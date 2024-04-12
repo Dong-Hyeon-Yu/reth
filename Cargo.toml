@@ -174,10 +174,10 @@ revm = { git = "https://github.com/Dong-Hyeon-Yu/revm.git", branch = "master", f
     "std",
     "secp256k1",
 ], default-features = false }
-revm-primitives = { git = "https://github.com/bluealloy/revm", rev = "34e636b", features = [
+revm-primitives = { git = "https://github.com/Dong-Hyeon-Yu/revm.git", branch = "master", features = [
     "std",
 ], default-features = false }
-revm-inspectors = { git = "https://github.com/paradigmxyz/evm-inspectors", rev = "1ae72ff" }
+revm-inspectors = { git = "https://github.com/Dong-Hyeon-Yu/evm-inspectors.git", branch = "reth-alpha-freeze" }
 
 # eth
 alloy-chains = { version = "0.1", feature = ["serde", "rlp", "arbitrary"] }

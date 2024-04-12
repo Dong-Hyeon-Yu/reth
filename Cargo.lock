@@ -5804,7 +5804,7 @@ dependencies = [
  "reth-revm",
  "reth-tasks",
  "reth-transaction-pool",
- "revm 6.2.0 (git+https://github.com/Dong-Hyeon-Yu/revm.git?branch=master)",
+ "revm",
  "tokio",
  "tracing",
 ]
@@ -6129,7 +6129,7 @@ dependencies = [
  "reth-provider",
  "reth-revm",
  "reth-transaction-pool",
- "revm 6.2.0 (git+https://github.com/Dong-Hyeon-Yu/revm.git?branch=master)",
+ "revm",
  "tracing",
 ]
 
@@ -6348,8 +6348,8 @@ version = "0.1.0-alpha.22"
 dependencies = [
  "reth-primitives",
  "reth-rpc-types",
- "revm 6.2.0 (git+https://github.com/Dong-Hyeon-Yu/revm.git?branch=master)",
- "revm-primitives 2.1.0 (git+https://github.com/bluealloy/revm?rev=34e636b)",
+ "revm",
+ "revm-primitives",
  "serde",
  "thiserror",
 ]
@@ -6473,7 +6473,7 @@ dependencies = [
  "reth-rpc-types",
  "reth-tracing",
  "reth-transaction-pool",
- "revm 6.2.0 (git+https://github.com/Dong-Hyeon-Yu/revm.git?branch=master)",
+ "revm",
  "serde",
 ]
 
@@ -6496,7 +6496,7 @@ dependencies = [
  "reth-rpc-types-compat",
  "reth-tracing",
  "reth-transaction-pool",
- "revm 6.2.0 (git+https://github.com/Dong-Hyeon-Yu/revm.git?branch=master)",
+ "revm",
  "serde",
 ]
 
@@ -6510,7 +6510,7 @@ dependencies = [
  "reth-provider",
  "reth-revm",
  "reth-transaction-pool",
- "revm 6.2.0 (git+https://github.com/Dong-Hyeon-Yu/revm.git?branch=master)",
+ "revm",
  "thiserror",
  "tracing",
 ]
@@ -6532,8 +6532,8 @@ dependencies = [
  "reth-rpc-types-compat",
  "reth-tasks",
  "reth-transaction-pool",
- "revm 6.2.0 (git+https://github.com/Dong-Hyeon-Yu/revm.git?branch=master)",
- "revm-primitives 2.1.0 (git+https://github.com/bluealloy/revm?rev=34e636b)",
+ "revm",
+ "revm-primitives",
  "serde",
  "sha2",
  "thiserror",
@@ -6586,8 +6586,8 @@ dependencies = [
  "reth-codecs",
  "reth-ethereum-forks",
  "reth-rpc-types",
- "revm 6.2.0 (git+https://github.com/Dong-Hyeon-Yu/revm.git?branch=master)",
- "revm-primitives 2.1.0 (git+https://github.com/bluealloy/revm?rev=34e636b)",
+ "revm",
+ "revm-primitives",
  "secp256k1 0.27.0",
  "serde",
  "serde_json",
@@ -6624,7 +6624,7 @@ dependencies = [
  "reth-node-api",
  "reth-primitives",
  "reth-trie",
- "revm 6.2.0 (git+https://github.com/Dong-Hyeon-Yu/revm.git?branch=master)",
+ "revm",
  "strum 0.26.1",
  "tempfile",
  "tokio",
@@ -6666,7 +6666,7 @@ dependencies = [
  "reth-primitives",
  "reth-provider",
  "reth-trie",
- "revm 6.2.0 (git+https://github.com/Dong-Hyeon-Yu/revm.git?branch=master)",
+ "revm",
  "revm-inspectors",
  "tracing",
 ]
@@ -6712,9 +6712,9 @@ dependencies = [
  "reth-rpc-types-compat",
  "reth-tasks",
  "reth-transaction-pool",
- "revm 6.2.0 (git+https://github.com/Dong-Hyeon-Yu/revm.git?branch=master)",
+ "revm",
  "revm-inspectors",
- "revm-primitives 2.1.0 (git+https://github.com/bluealloy/revm?rev=34e636b)",
+ "revm-primitives",
  "schnellru",
  "secp256k1 0.27.0",
  "serde",
@@ -6907,7 +6907,7 @@ dependencies = [
  "reth-revm",
  "reth-tokio-util",
  "reth-trie",
- "revm 6.2.0 (git+https://github.com/Dong-Hyeon-Yu/revm.git?branch=master)",
+ "revm",
  "serde",
  "serde_json",
  "thiserror",
@@ -6979,7 +6979,7 @@ dependencies = [
  "reth-revm",
  "reth-tasks",
  "reth-tracing",
- "revm 6.2.0 (git+https://github.com/Dong-Hyeon-Yu/revm.git?branch=master)",
+ "revm",
  "schnellru",
  "serde",
  "serde_json",
@@ -7006,7 +7006,7 @@ dependencies = [
  "reth-interfaces",
  "reth-primitives",
  "reth-provider",
- "revm 6.2.0 (git+https://github.com/Dong-Hyeon-Yu/revm.git?branch=master)",
+ "revm",
  "serde_json",
  "similar-asserts",
  "thiserror",
@@ -7023,21 +7023,8 @@ source = "git+https://github.com/Dong-Hyeon-Yu/revm.git?branch=master#316d4021db
 dependencies = [
  "auto_impl",
  "cfg-if",
- "revm-interpreter 3.1.0 (git+https://github.com/Dong-Hyeon-Yu/revm.git?branch=master)",
- "revm-precompile 4.1.0 (git+https://github.com/Dong-Hyeon-Yu/revm.git?branch=master)",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "revm"
-version = "6.2.0"
-source = "git+https://github.com/bluealloy/revm?rev=34e636b#34e636b2818a20b66448fec41ff2d9ee207a8ee7"
-dependencies = [
- "auto_impl",
- "cfg-if",
- "revm-interpreter 3.1.0 (git+https://github.com/bluealloy/revm?rev=34e636b)",
- "revm-precompile 4.1.0 (git+https://github.com/bluealloy/revm?rev=34e636b)",
+ "revm-interpreter",
+ "revm-precompile",
  "serde",
  "serde_json",
 ]
@@ -7045,7 +7032,7 @@ dependencies = [
 [[package]]
 name = "revm-inspectors"
 version = "0.1.0"
-source = "git+https://github.com/paradigmxyz/evm-inspectors?rev=1ae72ff#1ae72ffd4b677a8151db71a9fd8ce04530173022"
+source = "git+https://github.com/Dong-Hyeon-Yu/evm-inspectors.git?branch=reth-alpha-freeze#0809e9ef40c73c5d4da85b8814450f65e6050522"
 dependencies = [
  "alloy-primitives",
  "alloy-rpc-trace-types",
@@ -7055,7 +7042,7 @@ dependencies = [
  "boa_engine",
  "boa_gc",
  "colorchoice",
- "revm 6.2.0 (git+https://github.com/bluealloy/revm?rev=34e636b)",
+ "revm",
  "serde_json",
  "thiserror",
 ]
@@ -7065,16 +7052,7 @@ name = "revm-interpreter"
 version = "3.1.0"
 source = "git+https://github.com/Dong-Hyeon-Yu/revm.git?branch=master#316d4021db273ecdcb50b23877db040699b8cf9c"
 dependencies = [
- "revm-primitives 2.1.0 (git+https://github.com/Dong-Hyeon-Yu/revm.git?branch=master)",
- "serde",
-]
-
-[[package]]
-name = "revm-interpreter"
-version = "3.1.0"
-source = "git+https://github.com/bluealloy/revm?rev=34e636b#34e636b2818a20b66448fec41ff2d9ee207a8ee7"
-dependencies = [
- "revm-primitives 2.1.0 (git+https://github.com/bluealloy/revm?rev=34e636b)",
+ "revm-primitives",
  "serde",
 ]
 
@@ -7087,23 +7065,7 @@ dependencies = [
  "c-kzg",
  "k256",
  "once_cell",
- "revm-primitives 2.1.0 (git+https://github.com/Dong-Hyeon-Yu/revm.git?branch=master)",
- "ripemd",
- "secp256k1 0.28.2",
- "sha2",
- "substrate-bn",
-]
-
-[[package]]
-name = "revm-precompile"
-version = "4.1.0"
-source = "git+https://github.com/bluealloy/revm?rev=34e636b#34e636b2818a20b66448fec41ff2d9ee207a8ee7"
-dependencies = [
- "aurora-engine-modexp",
- "c-kzg",
- "k256",
- "once_cell",
- "revm-primitives 2.1.0 (git+https://github.com/bluealloy/revm?rev=34e636b)",
+ "revm-primitives",
  "ripemd",
  "secp256k1 0.28.2",
  "sha2",
@@ -7114,25 +7076,6 @@ dependencies = [
 name = "revm-primitives"
 version = "2.1.0"
 source = "git+https://github.com/Dong-Hyeon-Yu/revm.git?branch=master#316d4021db273ecdcb50b23877db040699b8cf9c"
-dependencies = [
- "alloy-primitives",
- "auto_impl",
- "bitflags 2.4.2",
- "bitvec",
- "c-kzg",
- "cfg-if",
- "derive_more",
- "enumn",
- "hashbrown 0.14.3",
- "hex",
- "once_cell",
- "serde",
-]
-
-[[package]]
-name = "revm-primitives"
-version = "2.1.0"
-source = "git+https://github.com/bluealloy/revm?rev=34e636b#34e636b2818a20b66448fec41ff2d9ee207a8ee7"
 dependencies = [
  "alloy-primitives",
  "auto_impl",
