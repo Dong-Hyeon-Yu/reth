@@ -7,10 +7,47 @@ use reth_primitives::{
     },
     U256,
 };
+
 use std::{
     cell::RefCell,
     collections::{hash_map::Entry, HashMap},
+    sync::{Arc, RwLock},
 };
+
+#[derive(Debug, Clone)]
+struct HashMapHolder<K, V> {
+    map: Arc<RwLock<HashMap<K, V>>>,
+}
+
+impl<K, V> Default for HashMapHolder<K, V>
+where
+    K: std::hash::Hash + Eq + PartialEq + Copy,
+    V: Clone,
+{
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<K, V> HashMapHolder<K, V>
+where
+    K: std::hash::Hash + Eq + PartialEq + Copy,
+    V: Clone,
+{
+    fn new() -> Self {
+        Self { map: Arc::new(RwLock::new(HashMap::new())) }
+    }
+
+    #[inline]
+    fn entry<R, F: Fn(Entry<'_, K, V>) -> R>(&self, key: K, f: F) -> R {
+        f(self.map.write().unwrap().entry(key))
+    }
+
+    #[inline]
+    fn insert(&self, key: K, value: V) {
+        self.map.write().unwrap().insert(key, value);
+    }
+}
 
 /// A container type that caches reads from an underlying [DatabaseRef].
 ///
@@ -33,9 +70,9 @@ use std::{
 /// ```
 #[derive(Debug, Clone, Default)]
 pub struct CachedReads {
-    accounts: HashMap<Address, CachedAccount>,
-    contracts: HashMap<B256, Bytecode>,
-    block_hashes: HashMap<U256, B256>,
+    accounts: HashMapHolder<Address, CachedAccount>,
+    contracts: HashMapHolder<B256, Bytecode>,
+    block_hashes: HashMapHolder<U256, B256>,
 }
 
 // === impl CachedReads ===
@@ -70,53 +107,61 @@ struct CachedReadsDbMut<'a, DB> {
 impl<'a, DB: DatabaseRef> Database for CachedReadsDbMut<'a, DB> {
     type Error = <DB as DatabaseRef>::Error;
 
-    fn basic(&mut self, address: Address) -> Result<Option<AccountInfo>, Self::Error> {
-        let basic = match self.cached.accounts.entry(address) {
-            Entry::Occupied(entry) => entry.get().info.clone(),
-            Entry::Vacant(entry) => {
-                entry.insert(CachedAccount::new(self.db.basic_ref(address)?)).info.clone()
+    fn basic(&self, address: Address) -> Result<Option<AccountInfo>, Self::Error> {
+        self.cached.accounts.entry(address, |e| {
+            let basic = match e {
+                Entry::Occupied(entry) => entry.get().info.clone(),
+                Entry::Vacant(entry) => {
+                    entry.insert(CachedAccount::new(self.db.basic_ref(address)?)).info.clone()
+                }
+            };
+            Ok(basic)
+        })
+    }
+
+    fn code_by_hash(&self, code_hash: B256) -> Result<Bytecode, Self::Error> {
+        self.cached.contracts.entry(code_hash, |e| {
+            let code = match e {
+                Entry::Occupied(entry) => entry.get().clone(),
+                Entry::Vacant(entry) => entry.insert(self.db.code_by_hash_ref(code_hash)?).clone(),
+            };
+            Ok(code)
+        })
+    }
+
+    fn storage(&self, address: Address, index: U256) -> Result<U256, Self::Error> {
+        self.cached.accounts.entry(address, |e| {
+            match e {
+                Entry::Occupied(mut acc_entry) => match acc_entry.get_mut().storage.entry(index) {
+                    Entry::Occupied(entry) => Ok(*entry.get()),
+                    Entry::Vacant(entry) => Ok(*entry.insert(self.db.storage_ref(address, index)?)),
+                },
+                Entry::Vacant(acc_entry) => {
+                    // acc needs to be loaded for us to access slots.
+                    let info = self.db.basic_ref(address)?;
+                    let (account, value) = if info.is_some() {
+                        let value = self.db.storage_ref(address, index)?;
+                        let mut account = CachedAccount::new(info);
+                        account.storage.insert(index, value);
+                        (account, value)
+                    } else {
+                        (CachedAccount::new(info), U256::ZERO)
+                    };
+                    acc_entry.insert(account);
+                    Ok(value)
+                }
             }
-        };
-        Ok(basic)
+        })
     }
 
-    fn code_by_hash(&mut self, code_hash: B256) -> Result<Bytecode, Self::Error> {
-        let code = match self.cached.contracts.entry(code_hash) {
-            Entry::Occupied(entry) => entry.get().clone(),
-            Entry::Vacant(entry) => entry.insert(self.db.code_by_hash_ref(code_hash)?).clone(),
-        };
-        Ok(code)
-    }
-
-    fn storage(&mut self, address: Address, index: U256) -> Result<U256, Self::Error> {
-        match self.cached.accounts.entry(address) {
-            Entry::Occupied(mut acc_entry) => match acc_entry.get_mut().storage.entry(index) {
-                Entry::Occupied(entry) => Ok(*entry.get()),
-                Entry::Vacant(entry) => Ok(*entry.insert(self.db.storage_ref(address, index)?)),
-            },
-            Entry::Vacant(acc_entry) => {
-                // acc needs to be loaded for us to access slots.
-                let info = self.db.basic_ref(address)?;
-                let (account, value) = if info.is_some() {
-                    let value = self.db.storage_ref(address, index)?;
-                    let mut account = CachedAccount::new(info);
-                    account.storage.insert(index, value);
-                    (account, value)
-                } else {
-                    (CachedAccount::new(info), U256::ZERO)
-                };
-                acc_entry.insert(account);
-                Ok(value)
-            }
-        }
-    }
-
-    fn block_hash(&mut self, number: U256) -> Result<B256, Self::Error> {
-        let code = match self.cached.block_hashes.entry(number) {
-            Entry::Occupied(entry) => *entry.get(),
-            Entry::Vacant(entry) => *entry.insert(self.db.block_hash_ref(number)?),
-        };
-        Ok(code)
+    fn block_hash(&self, number: U256) -> Result<B256, Self::Error> {
+        self.cached.block_hashes.entry(number, |e| {
+            let code = match e {
+                Entry::Occupied(entry) => *entry.get(),
+                Entry::Vacant(entry) => *entry.insert(self.db.block_hash_ref(number)?),
+            };
+            Ok(code)
+        })
     }
 }
 

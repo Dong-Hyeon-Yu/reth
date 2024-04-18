@@ -216,7 +216,7 @@ where
     for tx in transactions.into_iter() {
         if tx.hash() == target_tx_hash {
             // reached the target transaction
-            break
+            break;
         }
 
         tx.try_fill_tx_env(evm.tx_mut())?;
@@ -275,6 +275,7 @@ where
         if let Some(block_hashes) = block_overrides.block_hash.take() {
             // override block hashes
             db.block_hashes
+                .borrow_mut()
                 .extend(block_hashes.into_iter().map(|(num, hash)| (U256::from(num), hash)))
         }
         apply_block_overrides(*block_overrides, &mut env.env.block);
@@ -323,7 +324,7 @@ pub(crate) fn create_txn_env(
 ) -> EthResult<TxEnv> {
     // Ensure that if versioned hashes are set, they're not empty
     if request.has_empty_blob_hashes() {
-        return Err(RpcInvalidTransactionError::BlobTransactionMissingBlobHashes.into())
+        return Err(RpcInvalidTransactionError::BlobTransactionMissingBlobHashes.into());
     }
 
     let TransactionRequest {
@@ -399,7 +400,7 @@ where
 ///
 /// Returns an error if the caller has insufficient funds.
 /// Caution: This assumes non-zero `env.gas_price`. Otherwise, zero allowance will be returned.
-pub(crate) fn caller_gas_allowance<DB>(mut db: DB, env: &TxEnv) -> EthResult<U256>
+pub(crate) fn caller_gas_allowance<DB>(db: DB, env: &TxEnv) -> EthResult<U256>
 where
     DB: Database,
     EthApiError: From<<DB as Database>::Error>,
@@ -468,13 +469,13 @@ impl CallFees {
                 Some(max_fee) => {
                     if max_fee < block_base_fee {
                         // `base_fee_per_gas` is greater than the `max_fee_per_gas`
-                        return Err(RpcInvalidTransactionError::FeeCapTooLow.into())
+                        return Err(RpcInvalidTransactionError::FeeCapTooLow.into());
                     }
                     if max_fee < max_priority_fee_per_gas.unwrap_or(U256::ZERO) {
                         return Err(
                             // `max_priority_fee_per_gas` is greater than the `max_fee_per_gas`
                             RpcInvalidTransactionError::TipAboveFeeCap.into(),
-                        )
+                        );
                     }
                     Ok(min(
                         max_fee,
@@ -530,7 +531,7 @@ impl CallFees {
                 // Ensure blob_hashes are present
                 if !has_blob_hashes {
                     // Blob transaction but no blob hashes
-                    return Err(RpcInvalidTransactionError::BlobTransactionMissingBlobHashes.into())
+                    return Err(RpcInvalidTransactionError::BlobTransactionMissingBlobHashes.into());
                 }
 
                 Ok(CallFees {
