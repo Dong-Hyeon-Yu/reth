@@ -3175,6 +3175,7 @@ checksum = "290f1a1d9242c78d09ce40a5e87e7554ee637af1351968159f4952f028f75604"
 dependencies = [
  "ahash",
  "allocator-api2",
+ "rayon",
  "serde",
 ]
 
@@ -7019,7 +7020,7 @@ dependencies = [
 [[package]]
 name = "revm"
 version = "6.2.0"
-source = "git+https://github.com/Dong-Hyeon-Yu/revm.git?rev=606b9af664d97f15d4c51dd5e03edc1a90427770#606b9af664d97f15d4c51dd5e03edc1a90427770"
+source = "git+https://github.com/Dong-Hyeon-Yu/revm.git?branch=master#e030c6b229ba9d47827452bc83811c63d470b386"
 dependencies = [
  "auto_impl",
  "cfg-if",
@@ -7032,7 +7033,7 @@ dependencies = [
 [[package]]
 name = "revm-inspectors"
 version = "0.1.0"
-source = "git+https://github.com/Dong-Hyeon-Yu/evm-inspectors.git?rev=8aeb58314399bed92d2df962d84dd65fb1607f50#8aeb58314399bed92d2df962d84dd65fb1607f50"
+source = "git+https://github.com/Dong-Hyeon-Yu/evm-inspectors.git?branch=reth-alpha-freeze#c31373dabbc5fdb55f8c41a9995ebe6d74f25453"
 dependencies = [
  "alloy-primitives",
  "alloy-rpc-trace-types",
@@ -7050,7 +7051,7 @@ dependencies = [
 [[package]]
 name = "revm-interpreter"
 version = "3.1.0"
-source = "git+https://github.com/Dong-Hyeon-Yu/revm.git?rev=606b9af664d97f15d4c51dd5e03edc1a90427770#606b9af664d97f15d4c51dd5e03edc1a90427770"
+source = "git+https://github.com/Dong-Hyeon-Yu/revm.git?branch=master#e030c6b229ba9d47827452bc83811c63d470b386"
 dependencies = [
  "revm-primitives",
  "serde",
@@ -7059,7 +7060,7 @@ dependencies = [
 [[package]]
 name = "revm-precompile"
 version = "4.1.0"
-source = "git+https://github.com/Dong-Hyeon-Yu/revm.git?rev=606b9af664d97f15d4c51dd5e03edc1a90427770#606b9af664d97f15d4c51dd5e03edc1a90427770"
+source = "git+https://github.com/Dong-Hyeon-Yu/revm.git?branch=master#e030c6b229ba9d47827452bc83811c63d470b386"
 dependencies = [
  "aurora-engine-modexp",
  "c-kzg",
@@ -7074,8 +7075,8 @@ dependencies = [
 
 [[package]]
 name = "revm-primitives"
-version = "2.1.0"
-source = "git+https://github.com/Dong-Hyeon-Yu/revm.git?rev=606b9af664d97f15d4c51dd5e03edc1a90427770#606b9af664d97f15d4c51dd5e03edc1a90427770"
+version = "2.1.1"
+source = "git+https://github.com/Dong-Hyeon-Yu/revm.git?branch=master#e030c6b229ba9d47827452bc83811c63d470b386"
 dependencies = [
  "alloy-primitives",
  "auto_impl",

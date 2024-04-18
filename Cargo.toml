@@ -170,14 +170,14 @@ reth-transaction-pool = { path = "crates/transaction-pool" }
 reth-trie = { path = "crates/trie" }
 
 # revm
-revm = { git = "https://github.com/Dong-Hyeon-Yu/revm.git", rev = "606b9af664d97f15d4c51dd5e03edc1a90427770", features = [
+revm = { git = "https://github.com/Dong-Hyeon-Yu/revm.git", branch = "master", features = [
     "std",
     "secp256k1",
 ], default-features = false }
-revm-primitives = { git = "https://github.com/Dong-Hyeon-Yu/revm.git", rev = "606b9af664d97f15d4c51dd5e03edc1a90427770", features = [
+revm-primitives = { git = "https://github.com/Dong-Hyeon-Yu/revm.git", branch = "master", features = [
     "std",
 ], default-features = false }
-revm-inspectors = { git = "https://github.com/Dong-Hyeon-Yu/evm-inspectors.git", rev = "8aeb58314399bed92d2df962d84dd65fb1607f50" }
+revm-inspectors = { git = "https://github.com/Dong-Hyeon-Yu/evm-inspectors.git", branch = "reth-alpha-freeze" }
 
 # eth
 alloy-chains = { version = "0.1", feature = ["serde", "rlp", "arbitrary"] }
