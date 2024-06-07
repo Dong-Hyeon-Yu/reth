@@ -1,5 +1,7 @@
 //! Wrapper around BlockchainTree that allows for it to be shared.
 
+use crate::AppendableChain;
+
 use super::BlockchainTree;
 use parking_lot::RwLock;
 use reth_db::database::Database;
@@ -15,7 +17,7 @@ use reth_primitives::{
     SealedHeader,
 };
 use reth_provider::{
-    BlockchainTreePendingStateProvider, BundleStateDataProvider, CanonStateSubscriptions,
+    BlockchainTreePendingStateProvider, BundleStateDataProvider, CanonStateSubscriptions, Chain,
     ExecutorFactory,
 };
 use std::{
@@ -35,6 +37,17 @@ impl<DB: Database, EF: ExecutorFactory> ShareableBlockchainTree<DB, EF> {
     /// Create a new shareable database.
     pub fn new(tree: BlockchainTree<DB, EF>) -> Self {
         Self { tree: Arc::new(RwLock::new(tree)) }
+    }
+
+    /// Insert a chain for a block for OX-like architecture.
+    /// The executed block is inserted directly into the tree.
+    /// Then, this block is canonicalized afterwards.
+    pub fn insert_chain(&self, chain: Chain) -> RethResult<()> {
+        let mut tree = self.tree.write();
+
+        let _ = tree.insert_chain(AppendableChain::new(chain));
+        tree.update_chains_metrics();
+        Ok(())
     }
 }
 
@@ -145,7 +158,7 @@ impl<DB: Database, EF: ExecutorFactory> BlockchainTreeViewer for ShareableBlockc
         }
 
         if tree.block_indices().is_block_hash_canonical(&parent) {
-            return Some(parent)
+            return Some(parent);
         }
 
         None
