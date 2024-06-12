@@ -10,7 +10,7 @@ use crate::{
 };
 use reth_interfaces::db::{DatabaseWriteError, DatabaseWriteOperation};
 use reth_libmdbx::{ffi::DBI, CommitLatency, Transaction, TransactionKind, WriteFlags, RW};
-use reth_tracing::tracing::{debug, trace, warn};
+use reth_tracing::tracing::{info, trace, warn};
 use std::{
     backtrace::Backtrace,
     marker::PhantomData,
@@ -128,7 +128,7 @@ impl<K: TransactionKind> Tx<K> {
             let (result, commit_latency) = f(tx);
             let total_duration = start.elapsed();
 
-            debug!(
+            info!(
                 target: "storage::db::mdbx",
                 ?total_duration,
                 ?commit_latency,
@@ -238,9 +238,9 @@ impl<K: TransactionKind> MetricsHandler<K> {
     /// NOTE: Backtrace is recorded using [Backtrace::force_capture], so `RUST_BACKTRACE` env var is
     /// not needed.
     fn log_backtrace_on_long_read_transaction(&self) {
-        if self.record_backtrace &&
-            !self.backtrace_recorded.load(Ordering::Relaxed) &&
-            self.transaction_mode().is_read_only()
+        if self.record_backtrace
+            && !self.backtrace_recorded.load(Ordering::Relaxed)
+            && self.transaction_mode().is_read_only()
         {
             let open_duration = self.start.elapsed();
             if open_duration > LONG_TRANSACTION_DURATION {

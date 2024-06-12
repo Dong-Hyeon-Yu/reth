@@ -1002,7 +1002,7 @@ impl<DB: Database, EVM: ExecutorFactory> BlockchainTree<DB, EVM> {
 
         // event about new canonical chain.
         let chain_notification;
-        debug!(
+        info!(
             target: "blockchain_tree",
             "Committing new canonical chain: {}", DisplayBlocksChain(new_canon_chain.blocks())
         );
@@ -1076,10 +1076,10 @@ impl<DB: Database, EVM: ExecutorFactory> BlockchainTree<DB, EVM> {
         // send notification about new canonical chain.
         let _ = self.canon_state_notification_sender.send(chain_notification);
 
-        debug!(
+        info!(
             target: "blockchain_tree",
             actions = ?durations_recorder.actions,
-            "Canonicalization finished"
+            "Canonicalization finished block_number {}", head.number
         );
 
         Ok(CanonicalOutcome::Committed { head })
@@ -1111,12 +1111,12 @@ impl<DB: Database, EVM: ExecutorFactory> BlockchainTree<DB, EVM> {
             blocks.iter().map(|(number, b)| (number, b.hash())).collect::<Vec<_>>();
         let trie_updates = match chain_trie_updates {
             Some(updates) => {
-                debug!(target: "blockchain_tree", blocks = ?block_hash_numbers, "Using cached trie updates");
+                info!(target: "blockchain_tree", blocks = ?block_hash_numbers, "Using cached trie updates");
                 self.metrics.trie_updates_insert_cached.increment(1);
                 updates
             }
             None => {
-                debug!(target: "blockchain_tree", blocks = ?block_hash_numbers, "Recomputing state root for insert");
+                info!(target: "blockchain_tree", blocks = ?block_hash_numbers, "Recomputing state root for insert");
                 let provider = self
                     .externals
                     .provider_factory
