@@ -153,6 +153,200 @@ impl<TX: DbTx> DatabaseProvider<TX> {
     }
 }
 
+impl<TX: DbTxMut + DbTx> DatabaseProvider<TX> {
+    /// Insert a block header into the database.
+    fn insert_header(&self, header: SealedHeader) -> ProviderResult<()> {
+        let block_number = header.number;
+
+        let mut durations_recorder = metrics::DurationsRecorder::default();
+
+        self.tx.put::<tables::CanonicalHeaders>(block_number, header.hash())?;
+        durations_recorder.record_relative(metrics::Action::InsertCanonicalHeaders);
+
+        // Put header with canonical hashes.
+        self.tx.put::<tables::Headers>(block_number, header.as_ref().clone())?;
+        durations_recorder.record_relative(metrics::Action::InsertHeaders);
+
+        self.tx.put::<tables::HeaderNumbers>(header.hash(), block_number)?;
+        durations_recorder.record_relative(metrics::Action::InsertHeaderNumbers);
+
+        // total difficulty
+        let ttd = if block_number == 0 {
+            header.difficulty
+        } else {
+            let parent_block_number = block_number - 1;
+            let parent_ttd = self.header_td_by_number(parent_block_number)?.unwrap_or_default();
+            durations_recorder.record_relative(metrics::Action::GetParentTD);
+            parent_ttd + header.difficulty
+        };
+
+        self.tx.put::<tables::HeaderTD>(block_number, ttd.into())?;
+        durations_recorder.record_relative(metrics::Action::InsertHeaderTD);
+
+        info!(
+            target: "providers::db",
+            ?block_number,
+            actions = ?durations_recorder.actions,
+            "Inserted header"
+        );
+
+        Ok(())
+    }
+
+    /// Insert a block body into the database.
+    pub fn insert_block_body(
+        &self,
+        block: BlockWithSenders,
+        prune_modes: Option<&PruneModes>,
+    ) -> ProviderResult<StoredBlockBodyIndices> {
+        let block_number = block.number;
+
+        let mut durations_recorder = metrics::DurationsRecorder::default();
+
+        let mut next_tx_num = self
+            .tx
+            .cursor_read::<tables::Transactions>()?
+            .last()?
+            .map(|(n, _)| n + 1)
+            .unwrap_or_default();
+        durations_recorder.record_relative(metrics::Action::GetNextTxNum);
+        let first_tx_num = next_tx_num;
+
+        let tx_count = block.block.body.len() as u64;
+
+        // Ensures we have all the senders for the block's transactions.
+        let mut tx_senders_elapsed = Duration::default();
+        let mut transactions_elapsed = Duration::default();
+        let mut tx_hash_numbers_elapsed = Duration::default();
+
+        for (transaction, sender) in block.block.body.into_iter().zip(block.senders.iter()) {
+            let hash = transaction.hash();
+
+            if prune_modes
+                .and_then(|modes| modes.sender_recovery)
+                .filter(|prune_mode| prune_mode.is_full())
+                .is_none()
+            {
+                let start = Instant::now();
+                self.tx.put::<tables::TxSenders>(next_tx_num, *sender)?;
+                tx_senders_elapsed += start.elapsed();
+            }
+
+            let start = Instant::now();
+            self.tx.put::<tables::Transactions>(next_tx_num, transaction.into())?;
+            let elapsed = start.elapsed();
+            if elapsed > Duration::from_secs(1) {
+                warn!(
+                    target: "providers::db",
+                    ?block_number,
+                    tx_num = %next_tx_num,
+                    hash = %hash,
+                    ?elapsed,
+                    "Transaction insertion took too long"
+                );
+            }
+            transactions_elapsed += elapsed;
+
+            if prune_modes
+                .and_then(|modes| modes.transaction_lookup)
+                .filter(|prune_mode| prune_mode.is_full())
+                .is_none()
+            {
+                let start = Instant::now();
+                self.tx.put::<tables::TxHashNumber>(hash, next_tx_num)?;
+                tx_hash_numbers_elapsed += start.elapsed();
+            }
+            next_tx_num += 1;
+        }
+        durations_recorder.record_duration(metrics::Action::InsertTxSenders, tx_senders_elapsed);
+        durations_recorder
+            .record_duration(metrics::Action::InsertTransactions, transactions_elapsed);
+        durations_recorder
+            .record_duration(metrics::Action::InsertTxHashNumbers, tx_hash_numbers_elapsed);
+
+        if let Some(withdrawals) = block.block.withdrawals {
+            if !withdrawals.is_empty() {
+                self.tx.put::<tables::BlockWithdrawals>(
+                    block_number,
+                    StoredBlockWithdrawals { withdrawals },
+                )?;
+                durations_recorder.record_relative(metrics::Action::InsertBlockWithdrawals);
+            }
+        }
+
+        let block_indices = StoredBlockBodyIndices { first_tx_num, tx_count };
+        self.tx.put::<tables::BlockBodyIndices>(block_number, block_indices.clone())?;
+        durations_recorder.record_relative(metrics::Action::InsertBlockBodyIndices);
+
+        if !block_indices.is_empty() {
+            self.tx.put::<tables::TransactionBlock>(block_indices.last_tx_num(), block_number)?;
+            durations_recorder.record_relative(metrics::Action::InsertTransactionBlock);
+        }
+
+        info!(
+            target: "providers::db",
+            ?block_number,
+            actions = ?durations_recorder.actions,
+            "Inserted block body"
+        );
+
+        Ok(block_indices)
+    }
+
+    /// Insert states of the blocks into the database.
+    /// This function MUST be called after inserting the blocks.
+    /// Specifically, inserting transactions is the most time-consuming operation.
+    /// Thus, we try to persist the block body during execution.
+    pub fn append_state_without_blocks(
+        &self,
+        headers: Vec<SealedHeader>, // these blocks do not contain transactions.
+        state: BundleStateWithReceipts,
+        hashed_state: HashedPostState,
+        trie_updates: TrieUpdates,
+    ) -> ProviderResult<()> {
+        if headers.is_empty() {
+            debug!(target: "providers::db", "Attempted to append empty block range");
+            return Ok(());
+        }
+
+        let first_number = headers.first().unwrap().number;
+
+        let last = headers.last().unwrap();
+        let last_block_number = last.number;
+
+        let mut durations_recorder = metrics::DurationsRecorder::default();
+
+        // Insert the headers
+        for header in headers {
+            self.insert_header(header)?;
+            durations_recorder.record_relative(metrics::Action::InsertHeaders);
+        }
+
+        // Write state and changesets to the database.
+        // Must be written after blocks because of the receipt lookup.
+        state.write_to_db(self.tx_ref(), OriginalValuesKnown::No)?;
+        durations_recorder.record_relative(metrics::Action::InsertState);
+
+        // insert hashes and intermediate merkle nodes
+        {
+            HashedStateChanges(hashed_state).write_to_db(&self.tx)?;
+            trie_updates.flush(&self.tx)?;
+        }
+        durations_recorder.record_relative(metrics::Action::InsertHashes);
+
+        self.update_history_indices(first_number..=last_block_number)?;
+        durations_recorder.record_relative(metrics::Action::InsertHistoryIndices);
+
+        // Update pipeline progress
+        self.update_pipeline_stages(last_block_number, false)?;
+        durations_recorder.record_relative(metrics::Action::UpdatePipelineStages);
+
+        info!(target: "providers::db", range = ?first_number..=last_block_number, actions = ?durations_recorder.actions, "Appended blocks");
+
+        Ok(())
+    }
+}
+
 /// For a given key, unwind all history shards that are below the given block number.
 ///
 /// S - Sharded key subtype.

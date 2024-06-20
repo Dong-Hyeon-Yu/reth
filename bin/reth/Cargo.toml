@@ -169,6 +169,8 @@ optimism = [
 # no-op feature flag for switching between the `optimism` and default functionality in CI matrices
 ethereum = []
 
+blockbody-pipeline = ["reth-blockchain-tree/blockbody-pipeline"]
+
 [[bin]]
 name = "reth"
 path = "src/main.rs"

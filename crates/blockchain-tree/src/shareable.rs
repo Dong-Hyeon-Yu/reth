@@ -13,8 +13,8 @@ use reth_interfaces::{
     RethResult,
 };
 use reth_primitives::{
-    BlockHash, BlockNumHash, BlockNumber, Receipt, SealedBlock, SealedBlockWithSenders,
-    SealedHeader,
+    BlockHash, BlockNumHash, BlockNumber, BlockWithSenders, Receipt, SealedBlock,
+    SealedBlockWithSenders, SealedHeader,
 };
 use reth_provider::{
     BlockchainTreePendingStateProvider, BundleStateDataProvider, CanonStateSubscriptions, Chain,
@@ -47,6 +47,16 @@ impl<DB: Database, EF: ExecutorFactory> ShareableBlockchainTree<DB, EF> {
 
         let _ = tree.insert_chain(AppendableChain::new(chain));
         tree.update_chains_metrics();
+        Ok(())
+    }
+
+    /// Insert a block body and senders into the underlying database.
+    /// Note that persisting the block body is the most time-consuming operation.
+    /// Thus, we call this function before execution to try to persist the block body during exeuction.
+    #[cfg(feature = "blockbody-pipeline")]
+    pub fn insert_block_body(&self, block: BlockWithSenders) -> RethResult<()> {
+        let mut tree = self.tree.write();
+        let _ = tree.insert_block_body(block);
         Ok(())
     }
 }

@@ -6,7 +6,7 @@ use crate::{
     state::{BlockChainId, TreeState},
     AppendableChain, BlockIndices, BlockchainTreeConfig, BundleStateData, TreeExternals,
 };
-use reth_db::{database::Database, DatabaseError};
+use reth_db::{database::Database, models::StoredBlockBodyIndices, DatabaseError};
 use reth_interfaces::{
     blockchain_tree::{
         error::{BlockchainTreeError, CanonicalError, InsertBlockError, InsertBlockErrorKind},
@@ -18,8 +18,8 @@ use reth_interfaces::{
     RethError, RethResult,
 };
 use reth_primitives::{
-    BlockHash, BlockNumHash, BlockNumber, ForkBlock, GotExpected, Hardfork, PruneModes, Receipt,
-    SealedBlock, SealedBlockWithSenders, SealedHeader, U256,
+    BlockHash, BlockNumHash, BlockNumber, BlockWithSenders, ForkBlock, GotExpected, Hardfork,
+    PruneModes, Receipt, SealedBlock, SealedBlockWithSenders, SealedHeader, U256,
 };
 use reth_provider::{
     chain::{ChainSplit, ChainSplitTarget},
@@ -1098,6 +1098,7 @@ impl<DB: Database, EVM: ExecutorFactory> BlockchainTree<DB, EVM> {
     }
 
     /// Write the given chain to the database as canonical.
+    /// If blockbody-pipeline feature is enabled, it will write only headers to the database.
     fn commit_canonical_to_database(
         &self,
         chain: Chain,
@@ -1144,20 +1145,37 @@ impl<DB: Database, EVM: ExecutorFactory> BlockchainTree<DB, EVM> {
         recorder.record_relative(MakeCanonicalAction::RetrieveStateTrieUpdates);
 
         let provider_rw = self.externals.provider_factory.provider_rw()?;
-        provider_rw
-            .append_blocks_with_state(
+        if cfg!(feature = "blockbody-pipeline") {
+            provider_rw.append_state_without_blocks(
+                blocks.into_iter().map(|(_, b)| b.block.header).collect(),
+                state,
+                hashed_state,
+                trie_updates,
+            )
+        } else {
+            provider_rw.append_blocks_with_state(
                 blocks.into_blocks().collect(),
                 state,
                 hashed_state,
                 trie_updates,
                 self.prune_modes.as_ref(),
             )
-            .map_err(|e| BlockExecutionError::CanonicalCommit { inner: e.to_string() })?;
+        }
+        .map_err(|e| BlockExecutionError::CanonicalCommit { inner: e.to_string() })?;
 
         provider_rw.commit()?;
         recorder.record_relative(MakeCanonicalAction::CommitCanonicalChainToDatabase);
 
         Ok(())
+    }
+
+    /// Insert block body into the database.
+    /// See [DatabaseProvider::insert_block_body] for more information.
+    #[cfg(feature = "blockbody-pipeline")]
+    pub fn insert_block_body(&mut self, block: BlockWithSenders) -> Result<bool, ProviderError> {
+        let provider_rw = self.externals.provider_factory.provider_rw()?;
+        let _ = provider_rw.insert_block_body(block, self.prune_modes.as_ref())?;
+        Ok(provider_rw.commit()?)
     }
 
     /// Unwind tables and put it inside state
